@@ -1,4 +1,4 @@
-package com.shreyash;
+package com.client;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
