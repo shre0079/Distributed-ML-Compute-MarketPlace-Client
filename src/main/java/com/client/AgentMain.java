@@ -5,6 +5,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import com.client.docker.DockerExecutor;
+import com.client.dto.WorkerInfo;
+import com.client.util.SystemInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+
 public class AgentMain {
 
     private static final HttpClient httpClient = HttpClient.newHttpClient();
@@ -12,6 +18,10 @@ public class AgentMain {
     public static void main(String[] args) throws Exception {
 
         System.out.println("Agent starting...");
+
+        register();
+
+        DockerExecutor.runContainer("hello-world");
 
         while(true) {
             pingServer();
@@ -34,8 +44,9 @@ public class AgentMain {
     private static void register() throws Exception {
         WorkerInfo info = SystemInfo.getWorkerInfo();
 
-        ObjecterMapper mapper=new ObjectMapper();
+        ObjectMapper mapper = new ObjectMapper();
         String json=mapper.writeValueAsString(info);
+
 
         HttpRequest request=HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/register"))
@@ -44,6 +55,6 @@ public class AgentMain {
                 .build();
 
         httpClient.send(request,HttpResponse.BodyHandlers.ofString());
-        System.out.println("Registered worker: "+info.wokerId);
+        System.out.println("Registered worker: "+ info.workerId);
     }
 }
