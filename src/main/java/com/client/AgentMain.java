@@ -21,7 +21,12 @@ public class AgentMain {
 
         System.out.println("Agent starting...");
 
-        register();
+        try {
+            register();
+        } catch (Exception e) {
+            System.out.println("Registration failed: " + e.getMessage());
+            return;
+        }
 
         DockerExecutor.runContainer("hello-world");
 
