@@ -27,7 +27,8 @@ public class FileDownloader {
 
         HttpResponse<InputStream> response = httpClient.send(request,HttpResponse.BodyHandlers.ofInputStream());
 
-        Files.copy(response.body(),filePath);
+        Files.copy(response.body(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
 
         return dir;
     }
