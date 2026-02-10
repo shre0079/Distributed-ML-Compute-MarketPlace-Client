@@ -93,6 +93,8 @@ public class AgentMain {
         Path jobDir = null;
 
         try {
+
+            System.out.println("Downloading files...");
             jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
             System.out.println("Running container...");
