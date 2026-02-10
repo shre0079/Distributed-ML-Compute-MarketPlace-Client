@@ -95,6 +95,19 @@ public class AgentMain {
         try {
             jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
-            DockerExecutor.runContainer(job.dockerImage);
+            System.out.println("Running container...");
+            String logs = DockerExecutor.runContainer(
+                    job.dockerImage,
+                    jobDir.toAbsolutePath().toString()
+            );
+
+            System.out.println("Uploading results..."+logs.length());
+            ResultUploader.upload(job.jobId, logs);
+
+        } finally {
+            if (jobDir != null) {
+                CleanUpUtil.cleanup(jobDir);
+            }
+        }
     }
 }
