@@ -6,6 +6,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
 import com.client.docker.DockerExecutor;
+import com.client.dto.Job;
 import com.client.dto.WorkerInfo;
 import com.client.util.SystemInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class AgentMain {
 
     private static final HttpClient httpClient = HttpClient.newHttpClient();
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     public static void main(String[] args) throws Exception {
 
@@ -66,7 +68,7 @@ public class AgentMain {
     private static void pollJob() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://localhost:8080/jobs/poll"))
+                .uri(URI.create("http://localhost:8080/jobs/poll"))
                 .GET()
                 .build();
 
@@ -79,10 +81,8 @@ public class AgentMain {
 
         Job job = mapper.readValue(response.body(), Job.class);
 
-        if(job.dockerImage !=null){
-            System.out.println("Received job --> " + job.dockerImage);
+        System.out.println("Running job → " + job.dockerImage);
 
             DockerExecutor.runContainer(job.dockerImage);
-        }
     }
 }
