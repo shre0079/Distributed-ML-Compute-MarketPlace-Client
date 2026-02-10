@@ -4,10 +4,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 
 import com.client.docker.DockerExecutor;
 import com.client.dto.Job;
 import com.client.dto.WorkerInfo;
+import com.client.service.ResultUploader;
+import com.client.util.CleanUpUtil;
+import com.client.util.FileDownloader;
 import com.client.util.SystemInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -28,7 +32,7 @@ public class AgentMain {
             return;
         }
 
-        DockerExecutor.runContainer("hello-world");
+//        DockerExecutor.runContainer("hello-world");
 
         while(true) {
             try{
@@ -37,7 +41,9 @@ public class AgentMain {
                 System.out.println("Server unreachable, retrying with error: "+e.getMessage());;
             }
 
-            Thread.sleep(5000);
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ignored) {}
         }
     }
 
@@ -85,15 +91,6 @@ public class AgentMain {
         }
 
         Job job = mapper.readValue(response.body(), Job.class);
-
-        System.out.println("Downloading files...");
-        Path jobDir = FileDownloader.download(job.fileUrl, job.jobId);
-
-        System.out.println("Running container...");
-        String logs = DockerExecutor.runContainer(job.dockerImage, jobDir.toAbsolutePath().toString());
-
-        System.out.println("Uploading results..."+logs.length());
-        ResultUploader.upload(job.jobId, logs);
 
         Path jobDir = null;
 

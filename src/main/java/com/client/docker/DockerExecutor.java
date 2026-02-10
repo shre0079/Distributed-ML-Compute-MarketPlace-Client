@@ -5,12 +5,13 @@ import java.io.InputStreamReader;
 
 public class DockerExecutor {
 
-    public static void runContainer(String image) throws Exception{
+    public static String runContainer(String image, String folder) throws Exception{
 
         ProcessBuilder pb = new ProcessBuilder(
                 "docker",
                 "run",
                 "--rm",
+                "-v", folder + ":/app/data",
                 image
         );
 
@@ -20,14 +21,16 @@ public class DockerExecutor {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
+        StringBuilder logs = new StringBuilder();
         String line;
 
         while ((line = reader.readLine()) != null) {
             System.out.println(line);
+            logs.append(line).append("\n");
         }
 
-        int exitCode = process.waitFor();
+        process.waitFor();
 
-        System.out.println("Container exited with code : " + exitCode);
+        return logs.toString();
     }
 }
