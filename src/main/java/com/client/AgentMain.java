@@ -72,6 +72,11 @@ public class AgentMain {
 
         HttpResponse<String> response = httpClient.send(request,HttpResponse.BodyHandlers.ofString());
 
+        if (response.statusCode() == 204) {
+            System.out.println("No job available...");
+            return;
+        }
+
         Job job = mapper.readValue(response.body(), Job.class);
 
         if(job.dockerImage !=null){
