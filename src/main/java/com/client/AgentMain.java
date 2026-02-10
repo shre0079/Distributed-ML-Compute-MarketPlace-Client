@@ -57,4 +57,22 @@ public class AgentMain {
         httpClient.send(request,HttpResponse.BodyHandlers.ofString());
         System.out.println("Registered worker: "+ info.workerId);
     }
+
+    private static void pollJob() throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://localhost:8080/jobs/poll"))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request,HttpResponse.BodyHandlers.ofString());
+
+        Job job = mapper.readValue(response.body(), Job.class);
+
+        if(job.dockerImage !=null){
+            System.out.println("Received job --> " + job.dockerImage);
+
+            DockerExecutor.runContainer(job.dockerImage);
+        }
+    }
 }
