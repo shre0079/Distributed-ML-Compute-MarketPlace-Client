@@ -81,7 +81,19 @@ public class AgentMain {
 
         Job job = mapper.readValue(response.body(), Job.class);
 
-        System.out.println("Running job → " + job.dockerImage);
+        System.out.println("Downloading files...");
+        Path jobDir = FileDownloader.download(job.fileUrl, job.jobId);
+
+        System.out.println("Running container...");
+        String logs = DockerExecutor.runContainer(job.dockerImage, jobDir.toAbsolutePath().toString());
+
+        System.out.println("Uploading results..."+logs.length());
+        ResultUploader.upload(job.jobId, logs);
+
+        Path jobDir = null;
+
+        try {
+            jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
             DockerExecutor.runContainer(job.dockerImage);
     }
