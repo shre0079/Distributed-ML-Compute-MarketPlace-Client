@@ -24,7 +24,12 @@ public class AgentMain {
         DockerExecutor.runContainer("hello-world");
 
         while(true) {
-            pingServer();
+            try{
+                pollJob();
+            } catch (Exception e) {
+                System.out.println("Server unreachable, retrying with error: "+e.getMessage());;
+            }
+
             Thread.sleep(5000);
         }
     }
