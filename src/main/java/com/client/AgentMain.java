@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import com.client.docker.DockerExecutor;
 import com.client.dto.Job;
 import com.client.dto.WorkerInfo;
+import com.client.service.HeartbeatService;
 import com.client.service.ResultUploader;
 import com.client.util.CleanUpUtil;
 import com.client.util.FileDownloader;
@@ -20,6 +21,7 @@ public class AgentMain {
 
     private static final HttpClient httpClient = HttpClient.newHttpClient();
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static String workerId;
 
     public static void main(String[] args) throws Exception {
 
@@ -36,6 +38,7 @@ public class AgentMain {
 
         while(true) {
             try{
+                HeartbeatService.send(workerId, "IDLE");
                 pollJob();
             } catch (Exception e) {
                 System.out.println("Server unreachable, retrying with error: "+e.getMessage());;
@@ -61,7 +64,7 @@ public class AgentMain {
 
     private static void register() throws Exception {
         WorkerInfo info = SystemInfo.getWorkerInfo();
-
+        workerId = info.workerId;
         ObjectMapper mapper = new ObjectMapper();
         String json=mapper.writeValueAsString(info);
 
@@ -112,6 +115,6 @@ public class AgentMain {
             if (jobDir != null) {
                 CleanUpUtil.cleanup(jobDir);
             }
-        }
+        }   
     }
 }
