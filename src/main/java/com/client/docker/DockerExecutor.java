@@ -29,7 +29,10 @@ public class DockerExecutor {
             logs.append(line).append("\n");
         }
 
-        process.waitFor();
+        int exitCode = process.waitFor();
+        if (exitCode != 0){
+            throw new Exception("Container failed");
+        }
 
         return logs.toString();
     }
