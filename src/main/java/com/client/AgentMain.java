@@ -111,10 +111,25 @@ public class AgentMain {
             System.out.println("Uploading results..."+logs.length());
             ResultUploader.upload(job.jobId, logs);
 
-        } finally {
+        } catch (Exception e) {
+            System.out.println("Job failed: " + e.getMessage());
+            reportFailure(job.jobId);
+        }
+        finally {
             if (jobDir != null) {
                 CleanUpUtil.cleanup(jobDir);
             }
         }   
     }
+
+    public static void reportFailure(String jobId) throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/jobs/fail?jobId=" + jobId))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
 }

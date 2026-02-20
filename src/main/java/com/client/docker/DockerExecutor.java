@@ -30,8 +30,8 @@ public class DockerExecutor {
         }
 
         int exitCode = process.waitFor();
-        if (exitCode != 0){
-            throw new Exception("Container failed");
+        if (exitCode != 0) {
+            throw new RuntimeException("Container exited with " + exitCode);
         }
 
         return logs.toString();
