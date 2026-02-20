@@ -111,7 +111,11 @@ public class AgentMain {
             System.out.println("Uploading results..."+logs.length());
             ResultUploader.upload(job.jobId, logs);
 
-        } finally {
+        } catch (Exception e) {
+            System.out.println("Job failed: " + e.getMessage());
+            reportFailure(job.jobId);
+        }
+        finally {
             if (jobDir != null) {
                 CleanUpUtil.cleanup(jobDir);
             }
