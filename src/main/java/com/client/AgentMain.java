@@ -117,4 +117,15 @@ public class AgentMain {
             }
         }   
     }
+
+    public static void reportFailure(String jobId) throws Exception {
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("http://localhost:8080/jobs/fail?jobId=" + jobId))
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
 }
