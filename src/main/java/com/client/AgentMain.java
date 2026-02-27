@@ -82,7 +82,7 @@ public class AgentMain {
     private static void pollJob() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/jobs/poll"))
+                .uri(URI.create("http://localhost:8080/{workerId}"))
                 .GET()
                 .build();
 
