@@ -4,7 +4,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import com.client.docker.DockerExecutor;
 import com.client.dto.Job;
@@ -82,7 +85,7 @@ public class AgentMain {
     private static void pollJob() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/{workerId}"))
+                .uri(URI.create("http://localhost:8080/jobs/poll/"+workerId))
                 .GET()
                 .build();
 
