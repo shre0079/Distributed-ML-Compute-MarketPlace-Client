@@ -132,4 +132,29 @@ public class AgentMain {
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    public class ZipUtil {
+
+        public static Path zipFolder(Path sourceFolder, String zipName) throws Exception {
+
+            Path zipPath = sourceFolder.resolveSibling(zipName);
+
+            try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+
+                Files.walk(sourceFolder)
+                        .filter(path -> !Files.isDirectory(path))
+                        .forEach(path -> {
+                            ZipEntry zipEntry = new ZipEntry(sourceFolder.relativize(path).toString());
+                            try {
+                                zs.putNextEntry(zipEntry);
+                                Files.copy(path, zs);
+                                zs.closeEntry();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            }
+
+            return zipPath;
+        }
+    }
 }
