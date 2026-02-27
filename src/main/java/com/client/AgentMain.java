@@ -109,9 +109,12 @@ public class AgentMain {
             );
 
             Path outputDir = jobDir.resolve("output");
-            Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
-            ArtifactUploader.upload(job.jobId, zip);z
-
+            if (Files.exists(outputDir)) {
+                Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
+                ArtifactUploader.upload(job.jobId, zip);
+            } else {
+                System.out.println("No output folder for job " + job.jobId);
+            }
             System.out.println("Uploading results..."+logs.length());
             ResultUploader.upload(job.jobId, logs);
 
