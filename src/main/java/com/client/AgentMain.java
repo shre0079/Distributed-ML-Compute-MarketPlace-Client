@@ -157,4 +157,22 @@ public class AgentMain {
             return zipPath;
         }
     }
+
+    public class ArtifactUploader {
+
+        private static final HttpClient client = HttpClient.newHttpClient();
+
+        public static void upload(String jobId, Path zipPath) throws Exception {
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/jobs/artifact?jobId=" + jobId))
+                    .header("Content-Type", "application/octet-stream")
+                    .POST(HttpRequest.BodyPublishers.ofFile(zipPath))
+                    .build();
+
+            client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Uploaded artifact for " + jobId);
+        }
+    }
 }
