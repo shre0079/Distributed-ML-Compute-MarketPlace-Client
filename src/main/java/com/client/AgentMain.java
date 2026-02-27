@@ -4,7 +4,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import com.client.docker.DockerExecutor;
 import com.client.dto.Job;
@@ -82,7 +85,7 @@ public class AgentMain {
     private static void pollJob() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/jobs/poll"))
+                .uri(URI.create("http://localhost:8080/jobs/poll/"+workerId))
                 .GET()
                 .build();
 
@@ -108,6 +111,13 @@ public class AgentMain {
                     jobDir.toAbsolutePath().toString()
             );
 
+            Path outputDir = jobDir.resolve("output");
+            if (Files.exists(outputDir)) {
+                Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
+                ArtifactUploader.upload(job.jobId, zip);
+            } else {
+                System.out.println("No output folder for job " + job.jobId);
+            }
             System.out.println("Uploading results..."+logs.length());
             ResultUploader.upload(job.jobId, logs);
 
@@ -132,4 +142,47 @@ public class AgentMain {
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
+    public class ZipUtil {
+
+        public static Path zipFolder(Path sourceFolder, String zipName) throws Exception {
+
+            Path zipPath = sourceFolder.resolveSibling(zipName);
+
+            try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+
+                Files.walk(sourceFolder)
+                        .filter(path -> !Files.isDirectory(path))
+                        .forEach(path -> {
+                            ZipEntry zipEntry = new ZipEntry(sourceFolder.relativize(path).toString());
+                            try {
+                                zs.putNextEntry(zipEntry);
+                                Files.copy(path, zs);
+                                zs.closeEntry();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+            }
+
+            return zipPath;
+        }
+    }
+
+    public class ArtifactUploader {
+
+        private static final HttpClient client = HttpClient.newHttpClient();
+
+        public static void upload(String jobId, Path zipPath) throws Exception {
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("http://localhost:8080/jobs/artifact?jobId=" + jobId))
+                    .header("Content-Type", "application/octet-stream")
+                    .POST(HttpRequest.BodyPublishers.ofFile(zipPath))
+                    .build();
+
+            client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            System.out.println("Uploaded artifact for " + jobId);
+        }
+    }
 }
