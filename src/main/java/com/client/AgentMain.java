@@ -108,6 +108,10 @@ public class AgentMain {
                     jobDir.toAbsolutePath().toString()
             );
 
+            Path outputDir = jobDir.resolve("output");
+            Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
+            ArtifactUploader.upload(job.jobId, zip);z
+
             System.out.println("Uploading results..."+logs.length());
             ResultUploader.upload(job.jobId, logs);
 
