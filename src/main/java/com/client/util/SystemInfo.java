@@ -18,6 +18,8 @@ public class SystemInfo {
         String os=System.getProperty("os.name");
         String workerId= UUID.randomUUID().toString();
 
-        return  new WorkerInfo(workerId, cpu, memoryMB, os);
+        boolean hasGpu = true; //ask user to lend gpu or not
+
+        return  new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu);
     }
 }
