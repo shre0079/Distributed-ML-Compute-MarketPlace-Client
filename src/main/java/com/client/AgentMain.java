@@ -101,8 +101,9 @@ public class AgentMain {
         Path jobDir = null;
 
         try {
-
-            System.out.println("Downloading files...");
+            String fileUri = job.fileUrl;
+            String fileName = fileUri.substring(fileUri.lastIndexOf("/")+1);
+            System.out.println("Downloading dataset: "+fileName);
             jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
             System.out.println("Running container...");
