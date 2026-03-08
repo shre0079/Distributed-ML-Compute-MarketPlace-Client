@@ -5,7 +5,10 @@ import java.io.InputStreamReader;
 
 public class DockerExecutor {
 
+    public static long runtimeMs;
+
     public static String runContainer(String image, String folder) throws Exception{
+
 
         ProcessBuilder pb = new ProcessBuilder(
                 "docker",
@@ -16,6 +19,14 @@ public class DockerExecutor {
         );
 
         pb.redirectErrorStream(true);
+
+        Process pull = new ProcessBuilder("docker", "pull", image)
+                .inheritIO()
+                .start();
+
+        pull.waitFor();
+
+        long start = System.currentTimeMillis();
 
         Process process = pb.start();
 
@@ -30,6 +41,12 @@ public class DockerExecutor {
         }
 
         int exitCode = process.waitFor();
+
+        long end = System.currentTimeMillis();
+        runtimeMs = end - start;
+
+        System.out.println("Container runtime: " + runtimeMs + " ms");
+
         if (exitCode != 0) {
             throw new RuntimeException("Container exited with " + exitCode);
         }
