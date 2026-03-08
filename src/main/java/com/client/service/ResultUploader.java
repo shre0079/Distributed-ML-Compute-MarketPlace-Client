@@ -8,10 +8,10 @@ import java.net.http.HttpResponse;
 public class ResultUploader {
     private static final HttpClient client = HttpClient.newHttpClient();
 
-    public static void upload(String jobId, String logs) throws Exception {
+    public static void upload(String jobId, String logs, long runtimeMs) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/jobs/result?jobId=" + jobId))
+                .uri(URI.create("http://localhost:8080/jobs/result?jobId=" + jobId + "&runtimeMs=" + runtimeMs))
                 .header("Content-Type", "text/plain")
                 .POST(HttpRequest.BodyPublishers.ofString(logs))
                 .build();
