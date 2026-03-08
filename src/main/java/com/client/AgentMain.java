@@ -120,7 +120,7 @@ public class AgentMain {
                 System.out.println("No output folder for job " + job.jobId);
             }
             System.out.println("Uploading results..."+logs.length());
-            ResultUploader.upload(job.jobId, logs);
+            ResultUploader.upload(job.jobId, logs, DockerExecutor.runtimeMs);
 
         } catch (Exception e) {
             System.out.println("Job failed: " + e.getMessage());
