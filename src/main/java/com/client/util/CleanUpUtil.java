@@ -1,9 +1,10 @@
 package com.client.util;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class CleanUpUtil {
 
@@ -18,12 +19,20 @@ public class CleanUpUtil {
                     .sorted(Comparator.reverseOrder())
                     .collect(Collectors.toList());
 
-        if (!Files.exists(dir)) return;
+            for (Path path : paths) {
 
-        Files.walk(dir)
-                .sorted(Comparator.reverseOrder()) // delete files first, then folder
-                .forEach(path -> path.toFile().delete());
+                boolean deleted = path.toFile().delete();
 
-        System.out.println("Cleaned up: " + dir);
+                if (!deleted) {
+                    System.out.println("Warning: could not delete " + path
+                            + " — may be locked or permission denied.");
+                }
+            }
+
+            System.out.println("Cleaned up job directory: " + dir);
+
+        } catch (Exception e) {
+            System.out.println("Cleanup failed for " + dir + ": " + e.getMessage());
+        }
     }
 }
