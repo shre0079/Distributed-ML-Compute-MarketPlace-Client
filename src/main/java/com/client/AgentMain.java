@@ -32,8 +32,11 @@ public class AgentMain {
 
         System.out.println("Agent starting...");
 
+        AgentMain agent = new AgentMain();
+
         try {
-            register();
+            pingServer();       // verify backend is up before doing anything
+            agent.register();   // then register
         } catch (Exception e) {
             System.out.println("Registration failed: " + e.getMessage());
             return;
@@ -41,28 +44,26 @@ public class AgentMain {
 
 //        DockerExecutor.runContainer("hello-world");
 
-        while(true) {
-            try{
-                HeartbeatService.send(workerId, "IDLE");
-                pollJob();
-            } catch (Exception e) {
-                System.out.println("Server unreachable, retrying with error: "+e.getMessage());;
-            }
-
+        while (true) {
             try {
-                Thread.sleep(5000);
-            } catch (InterruptedException ignored) {}
+                HeartbeatService.send(workerId, "IDLE");
+                agent.pollJob();
+            } catch (Exception e) {
+                System.out.println("Error in main loop: " + e.getMessage());
+            }
+            Thread.sleep(5000);
         }
     }
 
     private static void pingServer() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/ping"))
+                .uri(URI.create(BASE_URL + "/ping"))
                 .GET()
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
             throw new RuntimeException("Backend unreachable, ping failed: HTTP " + response.statusCode());
@@ -92,16 +93,21 @@ public class AgentMain {
     private void register() throws Exception {
 
         WorkerInfo info = SystemInfo.getWorkerInfo();
-        workerId = info.workerId;
-        ObjectMapper mapper = new ObjectMapper();
-        String json=mapper.writeValueAsString(info);
+        this.workerId = info.workerId;
 
+        String json = mapper.writeValueAsString(info);
 
-        HttpRequest request=HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/register"))
-                .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(json))
-                .build();
+        int maxAttempts = 5;
+        int delayMs = 3000;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(BASE_URL + "/register"))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json))
+                        .build();
 
                 HttpResponse<String> response = httpClient.send(request,
                         HttpResponse.BodyHandlers.ofString());
@@ -152,10 +158,12 @@ public class AgentMain {
             jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
             System.out.println("Running container...");
-            String logs = DockerExecutor.runContainer(
-                    job.dockerImage,
-                    jobDir.toAbsolutePath().toString()
-            );
+//            String logs = DockerExecutor.runContainer(
+//                    job.dockerImage,
+//                    jobDir.toAbsolutePath().toString()
+//            );
+
+            DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(job.dockerImage, jobDir.toString());
 
             Path outputDir = jobDir.resolve("output");
             if (Files.exists(outputDir)) {
@@ -164,8 +172,9 @@ public class AgentMain {
             } else {
                 System.out.println("No output folder for job " + job.jobId);
             }
-            System.out.println("Uploading results..."+logs.length());
-            ResultUploader.upload(job.jobId, logs, DockerExecutor.runtimeMs);
+//            System.out.println("Uploading results..."+logs.length());
+//            ResultUploader.upload(job.jobId, logs, DockerExecutor.runtimeMs);
+            ResultUploader.upload(job.jobId, result.logs, result.runtimeMs);
 
         } catch (Exception e) {
             System.out.println("Job failed: " + e.getMessage());
@@ -214,22 +223,29 @@ public class AgentMain {
         }
     }
 
-    public class ArtifactUploader {
+//
 
     //using universal httpClient
     static class ArtifactUploader {
 
-        public static void upload(String jobId, Path zipPath) throws Exception {
+        static void upload(String jobId, Path zipPath) throws Exception {
+
+            byte[] zipBytes = Files.readAllBytes(zipPath);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("http://localhost:8080/jobs/artifact?jobId=" + jobId))
+                    .uri(URI.create(BASE_URL + "/jobs/artifact?jobId=" + jobId))
                     .header("Content-Type", "application/octet-stream")
-                    .POST(HttpRequest.BodyPublishers.ofFile(zipPath))
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(zipBytes))
                     .build();
 
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request,  // ← shared client
+                    HttpResponse.BodyHandlers.ofString());
 
-            System.out.println("Uploaded artifact for " + jobId);
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("Artifact upload failed: HTTP " + response.statusCode());
+            }
+
+            System.out.println("Artifact uploaded for job: " + jobId);
         }
     }
 }
