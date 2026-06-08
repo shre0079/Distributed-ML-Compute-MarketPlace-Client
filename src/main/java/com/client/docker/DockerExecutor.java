@@ -51,6 +51,15 @@ public class DockerExecutor {
             throw new RuntimeException("Container exited with " + exitCode);
         }
 
-        return logs.toString();
+    // Clean value object to return both logs and runtime together
+    public static class ExecutionResult {
+
+        public final String logs;
+        public final long runtimeMs;
+
+        public ExecutionResult(String logs, long runtimeMs) {
+            this.logs = logs;
+            this.runtimeMs = runtimeMs;
+        }
     }
 }
