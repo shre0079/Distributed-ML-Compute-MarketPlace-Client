@@ -9,6 +9,11 @@ public class DockerExecutor {
 
     public static String runContainer(String image, String folder) throws Exception{
 
+        // Fix for Windows: Docker requires absolute path with forward slashes
+        String dockerPath = Path.of(folder)
+                .toAbsolutePath()
+                .toString()
+                .replace("\\", "/");
 
         ProcessBuilder pb = new ProcessBuilder(
                 "docker",
