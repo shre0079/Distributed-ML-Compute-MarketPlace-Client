@@ -64,7 +64,11 @@ public class AgentMain {
 
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        System.out.println("Server response: " + response.body());
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("Backend unreachable, ping failed: HTTP " + response.statusCode());
+        }
+
+        System.out.println("Backend reachable: " + response.body());
     }
 
 //    private static void register() throws Exception {
