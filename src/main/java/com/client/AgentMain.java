@@ -103,8 +103,28 @@ public class AgentMain {
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        httpClient.send(request,HttpResponse.BodyHandlers.ofString());
-        System.out.println("Registered worker: "+ info.workerId);
+                HttpResponse<String> response = httpClient.send(request,
+                        HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() == 200) {
+                    System.out.println("Registered successfully as: " + this.workerId);
+                    return; // success, exit retry loop
+                }
+
+                System.out.println("Registration attempt " + attempt + " failed: HTTP "
+                        + response.statusCode() + " - " + response.body());
+
+            } catch (Exception e) {
+                System.out.println("Registration attempt " + attempt + " error: " + e.getMessage());
+            }
+
+            if (attempt < maxAttempts) {
+                System.out.println("Retrying in " + (delayMs / 1000) + "s...");
+                Thread.sleep(delayMs);
+            }
+        }
+
+        throw new RuntimeException("Registration failed after " + maxAttempts + " attempts. Is the backend running?");
     }
 
     private static void pollJob() throws Exception {
