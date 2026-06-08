@@ -7,7 +7,16 @@ import java.util.Comparator;
 
 public class CleanUpUtil {
 
-    public static void cleanup(Path dir) throws IOException {
+    public static void cleanup(Path dir) {
+
+        if (dir == null || !Files.exists(dir)) {
+            return;
+        }
+
+        try {
+            List<Path> paths = Files.walk(dir)
+                    .sorted(Comparator.reverseOrder())
+                    .collect(Collectors.toList());
 
         if (!Files.exists(dir)) return;
 
