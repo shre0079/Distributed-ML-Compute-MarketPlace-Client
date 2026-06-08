@@ -38,11 +38,14 @@ public class DockerExecutor {
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
         StringBuilder logs = new StringBuilder();
-        String line;
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream()))) {
 
-        while ((line = reader.readLine()) != null) {
-            System.out.println(line);
-            logs.append(line).append("\n");
+            String line;
+            while ((line = reader.readLine()) != null) {
+                logs.append(line).append("\n");
+                System.out.println("[docker] " + line);
+            }
         }
 
         int exitCode = process.waitFor();
