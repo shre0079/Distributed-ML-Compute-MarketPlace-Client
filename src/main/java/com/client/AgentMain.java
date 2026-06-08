@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AgentMain {
 
+    static final String BASE_URL = "http://localhost:8080";
+
     private static final HttpClient httpClient = HttpClient.newHttpClient();
     private static final ObjectMapper mapper = new ObjectMapper();
     private static String workerId;
