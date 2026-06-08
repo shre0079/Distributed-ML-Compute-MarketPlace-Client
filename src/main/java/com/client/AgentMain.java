@@ -143,7 +143,7 @@ public class AgentMain {
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    public class ZipUtil {
+    static public class ZipUtil {
 
         public static Path zipFolder(Path sourceFolder, String zipName) throws Exception {
 
