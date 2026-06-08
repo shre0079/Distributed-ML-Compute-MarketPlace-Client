@@ -65,7 +65,26 @@ public class AgentMain {
         System.out.println("Server response: " + response.body());
     }
 
-    private static void register() throws Exception {
+//    private static void register() throws Exception {
+//        WorkerInfo info = SystemInfo.getWorkerInfo();
+//        workerId = info.workerId;
+//        ObjectMapper mapper = new ObjectMapper();
+//        String json=mapper.writeValueAsString(info);
+//
+//
+//        HttpRequest request=HttpRequest.newBuilder()
+//                .uri(URI.create("http://localhost:8080/register"))
+//                .header("Content-Type", "application/json")
+//                .POST(HttpRequest.BodyPublishers.ofString(json))
+//                .build();
+//
+//        httpClient.send(request,HttpResponse.BodyHandlers.ofString());
+//        System.out.println("Registered worker: "+ info.workerId);
+//    }
+
+    //register method wrt MAC+HOSTNAME + added validation and retry logic
+    private void register() throws Exception {
+
         WorkerInfo info = SystemInfo.getWorkerInfo();
         workerId = info.workerId;
         ObjectMapper mapper = new ObjectMapper();
