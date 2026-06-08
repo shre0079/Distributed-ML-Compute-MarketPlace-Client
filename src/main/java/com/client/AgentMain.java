@@ -171,7 +171,8 @@ public class AgentMain {
 
     public class ArtifactUploader {
 
-        private static final HttpClient client = HttpClient.newHttpClient();
+    //using universal httpClient
+    static class ArtifactUploader {
 
         public static void upload(String jobId, Path zipPath) throws Exception {
 
