@@ -163,18 +163,33 @@ public class AgentMain {
 //                    jobDir.toAbsolutePath().toString()
 //            );
 
-            DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(job.dockerImage, jobDir.toString());
+            // After DockerExecutor.runContainer()
+            DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(
+                    job.dockerImage,
+                    jobDir.toString(),
+                    job.maxRuntimeSeconds    // ← pass from job
+            );
 
-            Path outputDir = jobDir.resolve("output");
-            if (Files.exists(outputDir)) {
-                Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
-                ArtifactUploader.upload(job.jobId, zip);
+            if (result.timedOut) {
+                // Upload whatever output exists
+                Path outputDir = jobDir.resolve("output");
+                if (Files.exists(outputDir)) {
+                    Path zip = ZipUtil.zipFolder(outputDir, job.jobId + "_partial.zip");
+                    ArtifactUploader.upload(job.jobId, zip);
+                }
+
+                // Report timeout to backend
+                ResultUploader.uploadTimeout(job.jobId, result.runtimeMs, result.logs);
+
             } else {
-                System.out.println("No output folder for job " + job.jobId);
+                // Normal success flow
+                Path outputDir = jobDir.resolve("output");
+                if (Files.exists(outputDir)) {
+                    Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
+                    ArtifactUploader.upload(job.jobId, zip);
+                }
+                ResultUploader.upload(job.jobId, result.logs, result.runtimeMs);
             }
-//            System.out.println("Uploading results..."+logs.length());
-//            ResultUploader.upload(job.jobId, logs, DockerExecutor.runtimeMs);
-            ResultUploader.upload(job.jobId, result.logs, result.runtimeMs);
 
         } catch (Exception e) {
             System.out.println("Job failed: " + e.getMessage());
