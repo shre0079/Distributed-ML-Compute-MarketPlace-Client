@@ -27,6 +27,7 @@ public class AgentMain {
     private static final HttpClient httpClient = HttpClient.newHttpClient();
     private static final ObjectMapper mapper = new ObjectMapper();
     private static String workerId;
+    private static String workerSecret;
 
     public static void main(String[] args) throws Exception {
 
@@ -46,7 +47,7 @@ public class AgentMain {
 
         while (true) {
             try {
-                HeartbeatService.send(workerId, "IDLE");
+                HeartbeatService.send(workerId, workerSecret, "IDLE");
                 agent.pollJob();
             } catch (Exception e) {
                 System.out.println("Error in main loop: " + e.getMessage());
@@ -72,28 +73,13 @@ public class AgentMain {
         System.out.println("Backend reachable: " + response.body());
     }
 
-//    private static void register() throws Exception {
-//        WorkerInfo info = SystemInfo.getWorkerInfo();
-//        workerId = info.workerId;
-//        ObjectMapper mapper = new ObjectMapper();
-//        String json=mapper.writeValueAsString(info);
-//
-//
-//        HttpRequest request=HttpRequest.newBuilder()
-//                .uri(URI.create("http://localhost:8080/register"))
-//                .header("Content-Type", "application/json")
-//                .POST(HttpRequest.BodyPublishers.ofString(json))
-//                .build();
-//
-//        httpClient.send(request,HttpResponse.BodyHandlers.ofString());
-//        System.out.println("Registered worker: "+ info.workerId);
-//    }
 
     //register method wrt MAC+HOSTNAME + added validation and retry logic
     private void register() throws Exception {
 
         WorkerInfo info = SystemInfo.getWorkerInfo();
         this.workerId = info.workerId;
+        this.workerSecret = info.workerSecret;
 
         String json = mapper.writeValueAsString(info);
 
@@ -136,7 +122,8 @@ public class AgentMain {
     private static void pollJob() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/jobs/poll/"+workerId))
+                .uri(URI.create(BASE_URL + "/jobs/poll/" + workerId
+                        + "?workerSecret=" + workerSecret))
                 .GET()
                 .build();
 
@@ -179,7 +166,7 @@ public class AgentMain {
                 }
 
                 // Report timeout to backend
-                ResultUploader.uploadTimeout(job.jobId, result.runtimeMs, result.logs);
+                ResultUploader.uploadTimeout(job.jobId, result.runtimeMs, result.logs, workerSecret);
 
             } else {
                 // Normal success flow
@@ -188,7 +175,7 @@ public class AgentMain {
                     Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
                     ArtifactUploader.upload(job.jobId, zip);
                 }
-                ResultUploader.upload(job.jobId, result.logs, result.runtimeMs);
+                ResultUploader.upload(job.jobId, result.logs, result.runtimeMs, workerSecret);
             }
 
         } catch (Exception e) {
@@ -205,7 +192,8 @@ public class AgentMain {
     public static void reportFailure(String jobId) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("http://localhost:8080/jobs/fail?jobId=" + jobId))
+                .uri(URI.create(BASE_URL + "/jobs/fail?jobId=" + jobId
+                        + "&workerSecret=" + workerSecret))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
 
@@ -248,7 +236,8 @@ public class AgentMain {
             byte[] zipBytes = Files.readAllBytes(zipPath);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BASE_URL + "/jobs/artifact?jobId=" + jobId))
+                    .uri(URI.create(BASE_URL + "/jobs/artifact?jobId=" + jobId
+                            + "&workerSecret=" + workerSecret))
                     .header("Content-Type", "application/octet-stream")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(zipBytes))
                     .build();
