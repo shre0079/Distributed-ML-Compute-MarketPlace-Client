@@ -1,9 +1,9 @@
 package com.client.util;
 
 import com.client.dto.WorkerInfo;
-
 import java.lang.management.ManagementFactory;
-import com.sun.management.OperatingSystemMXBean;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -11,40 +11,18 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Collections;
 
-
-//public class SystemInfo {
-//    public static WorkerInfo getWorkerInfo(){
-//        int cpu=Runtime.getRuntime().availableProcessors();
-//
-//        OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-//
-//        long memoryBytes=osBean.getTotalMemorySize();
-//        long memoryMB=memoryBytes / (1024*1024);
-//
-//        String os=System.getProperty("os.name");
-//        String workerId= UUID.randomUUID().toString();
-//
-//        boolean hasGpu = true; //ask user to lend gpu or not
-//
-//        return  new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu);
-//    }
-//}
-
-
-
-
 //MAC+HostName Hashed WorkerIDs
 public class SystemInfo {
 
     public static WorkerInfo getWorkerInfo() {
-
         int cpu = Runtime.getRuntime().availableProcessors();
         long memoryMB = detectMemoryMB();
         String os = System.getProperty("os.name");
         String workerId = deriveWorkerId();
         boolean hasGpu = detectGpu();
+        String workerSecret = getOrCreateWorkerSecret();
 
-        return new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu);
+        return new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu, workerSecret);
     }
 
     private static long detectMemoryMB() {
@@ -135,5 +113,30 @@ public class SystemInfo {
 
         System.out.println("No GPU detected, registering as CPU-only worker.");
         return false;
+    }
+
+    private static final Path WORKER_SECRET_FILE = Path.of("worker.secret");
+
+    private static String getOrCreateWorkerSecret() {
+        try {
+            if (Files.exists(WORKER_SECRET_FILE)) {
+                String secret = Files.readString(WORKER_SECRET_FILE).trim();
+                System.out.println("Loaded existing workerSecret.");
+                return secret;
+            }
+
+            // First run — generate and persist
+            String secret = UUID.randomUUID().toString()
+                    .replace("-", "")
+                    + UUID.randomUUID().toString().replace("-", "");
+
+            Files.writeString(WORKER_SECRET_FILE, secret);
+            System.out.println("Generated new workerSecret.");
+            return secret;
+
+        } catch (Exception e) {
+            System.out.println("Warning: could not persist workerSecret.");
+            return UUID.randomUUID().toString();
+        }
     }
 }
