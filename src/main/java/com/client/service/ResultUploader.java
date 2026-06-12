@@ -11,10 +11,12 @@ public class ResultUploader {
 
     private static final HttpClient client = HttpClient.newHttpClient();
 
-    public static void upload(String jobId, String logs, long runtimeMs) throws Exception {
+    public static void upload(String jobId, String logs, long runtimeMs, String workerSecret ) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/jobs/result?jobId=" + jobId + "&runtimeMs=" + runtimeMs))
+                .uri(URI.create(BASE_URL + "/jobs/result?jobId=" + jobId
+                        + "&runtimeMs=" + runtimeMs
+                        + "&workerSecret=" + workerSecret))
                 .header("Content-Type", "text/plain")
                 .POST(HttpRequest.BodyPublishers.ofString(logs))
                 .build();
@@ -22,11 +24,12 @@ public class ResultUploader {
         client.send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    public static void uploadTimeout(String jobId, long runtimeMs, String logs) throws Exception {
+    public static void uploadTimeout(String jobId, long runtimeMs, String logs, String workerSecret) throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(BASE_URL + "/jobs/timeout?jobId=" + jobId +
-                        "&runtimeMs=" + runtimeMs))
+                .uri(URI.create(BASE_URL + "/jobs/timeout?jobId=" + jobId
+                        + "&runtimeMs=" + runtimeMs
+                        + "&workerSecret=" + workerSecret))
                 .header("Content-Type", "text/plain")
                 .POST(HttpRequest.BodyPublishers.ofString(logs))
                 .build();
