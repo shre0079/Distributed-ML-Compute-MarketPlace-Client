@@ -35,13 +35,13 @@ public class AgentMain {
 
         AgentMain agent = new AgentMain();
 
-        try {
-            pingServer();       // verify backend is up before doing anything
+//        try {
+//            pingServer();       // verify backend is up before doing anything
             agent.register();   // then register
-        } catch (Exception e) {
-            System.out.println("Registration failed: " + e.getMessage());
-            return;
-        }
+//        } catch (Exception e) {
+//            System.out.println("Registration failed: " + e.getMessage());
+//            return;
+//        }
 
 //        DockerExecutor.runContainer("hello-world");
 
