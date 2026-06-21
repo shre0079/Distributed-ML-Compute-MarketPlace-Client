@@ -1,11 +1,13 @@
 package com.client;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,13 +37,14 @@ public class AgentMain {
 
         AgentMain agent = new AgentMain();
 
-//        try {
-//            pingServer();       // verify backend is up before doing anything
+        try {
+            pingServer();       // verify backend is up before doing anything
             agent.register();   // then register
-//        } catch (Exception e) {
-//            System.out.println("Registration failed: " + e.getMessage());
-//            return;
-//        }
+            agent.syncRates();
+        } catch (Exception e) {
+            System.out.println("Registration failed: " + e.getMessage());
+            return;
+        }
 
 //        DockerExecutor.runContainer("hello-world");
 
@@ -154,7 +157,9 @@ public class AgentMain {
             DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(
                     job.dockerImage,
                     jobDir.toString(),
-                    job.maxRuntimeSeconds    // ← pass from job
+                    job.maxRuntimeSeconds,
+                    job.requiredCpu,
+                    job.requiredMemoryMB
             );
 
             if (result.timedOut) {
@@ -250,6 +255,31 @@ public class AgentMain {
             }
 
             System.out.println("Artifact uploaded for job: " + jobId);
+        }
+    }
+    private void syncRates() throws Exception {
+
+        BigDecimal[] rates = SystemInfo.loadRates();
+
+        String json = mapper.writeValueAsString(Map.of(
+                "cpuRatePerSecond", rates[0],
+                "gpuRatePerSecond", rates[1]
+        ));
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/workers/rate?workerId=" + workerId
+                        + "&workerSecret=" + workerSecret))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            System.out.println("Rates synced: cpu=$" + rates[0] + "/s gpu=$" + rates[1] + "/s");
+        } else {
+            System.out.println("Rate sync failed: HTTP " + response.statusCode());
         }
     }
 }

@@ -9,4 +9,6 @@ public class Job {
     public String jobId;
     public String fileUrl;
     public int maxRuntimeSeconds;
+    public int requiredCpu;
+    public long requiredMemoryMB;
 }

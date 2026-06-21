@@ -10,29 +10,38 @@ public class DockerExecutor {
 
     public static ExecutionResult runContainer(String image,
                                                String folder,
-                                               int maxRuntimeSeconds) throws Exception {
+                                               int maxRuntimeSeconds,
+                                               int cpuCores,
+                                               long memoryMB) throws Exception {
 
         String dockerPath = Path.of(folder)
                 .toAbsolutePath()
                 .toString()
                 .replace("\\", "/");
 
-        // Pull image first
+        // Pull image first --- Step-1
         Process pull = new ProcessBuilder("docker", "pull", image)
                 .inheritIO()
                 .start();
         pull.waitFor();
 
+        // step 2 --- build run cmd with resource limits
         ProcessBuilder pb = new ProcessBuilder(
                 "docker", "run", "--rm",
+                "--cpus=" + cpuCores,                    // ← CPU limit
+                "--memory=" + memoryMB + "m",            // ← memory limit
+                "--memory-swap=" + memoryMB + "m",       // ← disable swap
                 "-v", dockerPath + ":/app/data",
                 image
         );
         pb.redirectErrorStream(true);
 
+        //step 3 --- start timing after pull
         long start = System.currentTimeMillis();
         Process process = pb.start();
 
+
+        //step 4 --- capture output
         StringBuilder logs = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream()))) {
@@ -43,7 +52,7 @@ public class DockerExecutor {
             }
         }
 
-        // Wait up to maxRuntimeSeconds
+        // Wait up to maxRuntimeSeconds --- step 5
         boolean finishedInTime = process.waitFor(
                 maxRuntimeSeconds, TimeUnit.SECONDS);
 
