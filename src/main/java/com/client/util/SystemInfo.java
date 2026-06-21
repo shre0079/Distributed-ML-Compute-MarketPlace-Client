@@ -2,8 +2,11 @@ package com.client.util;
 
 import com.client.dto.WorkerInfo;
 import java.lang.management.ManagementFactory;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Scanner;
 import java.util.UUID;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -14,6 +17,7 @@ import java.util.Collections;
 //MAC+HostName Hashed WorkerIDs
 public class SystemInfo {
 
+    // Update getWorkerInfo() to include rates:
     public static WorkerInfo getWorkerInfo() {
         int cpu = Runtime.getRuntime().availableProcessors();
         long memoryMB = detectMemoryMB();
@@ -21,8 +25,10 @@ public class SystemInfo {
         String workerId = deriveWorkerId();
         boolean hasGpu = detectGpu();
         String workerSecret = getOrCreateWorkerSecret();
+        BigDecimal[] rates = loadRates();
 
-        return new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu, workerSecret);
+        return new WorkerInfo(workerId, cpu, memoryMB, os, hasGpu,
+                workerSecret, rates[0], rates[1]);
     }
 
     private static long detectMemoryMB() {
@@ -82,14 +88,14 @@ public class SystemInfo {
                 if (hash.length() >= 12) break;
             }
 
-            String workerId = "worker-" + hash.toString();
+            String workerId = "worker-" + hash;
             System.out.println("Derived workerId: " + workerId
                     + " (MAC=" + mac + " hostname=" + hostname + ")");
             return workerId;
 
         } catch (Exception e) {
             System.out.println("Warning: could not derive stable workerId, falling back to UUID.");
-            return "worker-" + UUID.randomUUID().toString();
+            return "worker-" + UUID.randomUUID();
         }
     }
 
@@ -139,4 +145,41 @@ public class SystemInfo {
             return UUID.randomUUID().toString();
         }
     }
+
+    private static final Path WORKER_RATES_FILE = Path.of("worker.rates");
+
+    public static BigDecimal[] loadRates() {
+        try {
+            if (Files.exists(WORKER_RATES_FILE)) {
+                List<String> lines = Files.readAllLines(WORKER_RATES_FILE);
+                BigDecimal cpuRate = new BigDecimal(lines.get(0).trim());
+                BigDecimal gpuRate = new BigDecimal(lines.get(1).trim());
+                return new BigDecimal[] { cpuRate, gpuRate };
+            }
+        } catch (Exception e) {
+            System.out.println("Warning: could not read worker.rates, asking again.");
+        }
+
+        // First run — prompt the worker for pricing
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("=== Worker Pricing Setup ===");
+        System.out.println("Set your price per second of compute.");
+        System.out.println("Allowed range — CPU: $0.0001 to $0.0010/s | GPU: $0.0005 to $0.0050/s");
+
+        System.out.print("Enter your CPU rate per second (e.g. 0.0003): $");
+        BigDecimal cpuRate = new BigDecimal(scanner.nextLine().trim());
+
+        System.out.print("Enter your GPU rate per second (e.g. 0.0015): $");
+        BigDecimal gpuRate = new BigDecimal(scanner.nextLine().trim());
+
+        try {
+            Files.writeString(WORKER_RATES_FILE, cpuRate + "\n" + gpuRate);
+        } catch (Exception e) {
+            System.out.println("Warning: could not persist rates to file.");
+        }
+
+        return new BigDecimal[] { cpuRate, gpuRate };
+    }
+
+
 }
