@@ -8,33 +8,30 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.HashMap;
-import java.util.Map;
 
 public class HeartbeatService {
-
-
 
     private static final HttpClient httpClient = HttpClient.newHttpClient();
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public static void send(String workerId, String workerSecret,String status) throws IOException, InterruptedException {
+    public static void send(String workerId, String workerSecret, String status)
+            throws IOException, InterruptedException {
 
-
-        Map<String, String> payload = new HashMap<>();
-        payload.put("workerId", workerId);
-        payload.put("workerSecret", workerSecret);
-        payload.put("status", status);
-
-        Heartbeat heartbeat = new Heartbeat(workerId, status);
-        String json= mapper.writeValueAsString(heartbeat);
+        Heartbeat heartbeat = new Heartbeat(workerId, workerSecret, status);
+        String json = mapper.writeValueAsString(heartbeat);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("http://localhost:8080/workers/heartbeat"))
-                .header("Content-Type","application/json")
+                .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request,
+                HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            System.out.println("Heartbeat failed: HTTP " + response.statusCode()
+                    + " - " + response.body());
+        }
     }
 }
