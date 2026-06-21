@@ -1,11 +1,13 @@
 package com.client;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,13 +37,14 @@ public class AgentMain {
 
         AgentMain agent = new AgentMain();
 
-//        try {
-//            pingServer();       // verify backend is up before doing anything
+        try {
+            pingServer();       // verify backend is up before doing anything
             agent.register();   // then register
-//        } catch (Exception e) {
-//            System.out.println("Registration failed: " + e.getMessage());
-//            return;
-//        }
+            agent.syncRates();
+        } catch (Exception e) {
+            System.out.println("Registration failed: " + e.getMessage());
+            return;
+        }
 
 //        DockerExecutor.runContainer("hello-world");
 
@@ -154,7 +157,9 @@ public class AgentMain {
             DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(
                     job.dockerImage,
                     jobDir.toString(),
-                    job.maxRuntimeSeconds    // ← pass from job
+                    job.maxRuntimeSeconds,
+                    job.requiredCpu,
+                    job.requiredMemoryMB
             );
 
             if (result.timedOut) {
