@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCM Worker Panel</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar__left">
+        <div class="logo">DCM</div>
+        <div class="status-group">
+            <span class="led" id="led"></span>
+            <span class="status-label" id="statusLabel">CONNECTING</span>
+        </div>
+    </div>
+    <div class="topbar__center">
+        <span class="worker-id" id="workerIdLabel">Waiting for registration...</span>
+    </div>
+    <div class="topbar__right">
+        <div class="job-badge" id="jobBadge">
+            <span class="job-badge__dot"></span>
+            <span id="jobBadgeText">idle</span>
+        </div>
+    </div>
+</header>
+
+<main class="layout">
+
+    <!-- Left column -->
+    <aside class="sidebar">
+
+        <div class="card">
+            <div class="card__label">Total Earned</div>
+            <div class="card__money" id="totalEarned">$0.00000000</div>
+            <div class="divider"></div>
+            <div class="stat-row">
+                <span class="stat-row__key">Jobs completed</span>
+                <span class="stat-row__val" id="completedJobs">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-row__key">Reputation</span>
+                <span class="stat-row__val reputation" id="reputation">—</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-row__key">Wallet balance</span>
+                <span class="stat-row__val" id="walletBalance">—</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__label">Machine</div>
+            <div class="stat-row">
+                <span class="stat-row__key">OS</span>
+                <span class="stat-row__val" id="os">—</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-row__key">CPU cores</span>
+                <span class="stat-row__val mono" id="cpuCores">—</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-row__key">RAM</span>
+                <span class="stat-row__val mono" id="memoryMB">—</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-row__key">GPU</span>
+                <span class="stat-row__val" id="hasGpu">—</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card__label">Your Price</div>
+            <form id="rateForm">
+                <div class="field">
+                    <label class="field__label" for="cpuRate">CPU rate / second</label>
+                    <div class="field__row">
+                        <span class="field__prefix">$</span>
+                        <input class="field__input mono" type="number" step="0.00001"
+                               min="0.0001" max="0.0010" id="cpuRate" placeholder="0.0003" required>
+                    </div>
+                    <span class="field__range">$0.0001 – $0.0010</span>
+                </div>
+                <div class="field">
+                    <label class="field__label" for="gpuRate">GPU rate / second</label>
+                    <div class="field__row">
+                        <span class="field__prefix">$</span>
+                        <input class="field__input mono" type="number" step="0.00001"
+                               min="0.0005" max="0.0050" id="gpuRate" placeholder="0.0015" required>
+                    </div>
+                    <span class="field__range">$0.0005 – $0.0050</span>
+                </div>
+                <button class="btn btn--full" type="submit">Update Price</button>
+                <p class="field__msg" id="rateMessage"></p>
+            </form>
+        </div>
+
+        <div class="card">
+            <div class="card__label">Withdraw Earnings</div>
+            <form id="withdrawForm">
+                <div class="field">
+                    <label class="field__label" for="withdrawAmount">Amount</label>
+                    <div class="field__row">
+                        <span class="field__prefix">$</span>
+                        <input class="field__input mono" type="number" step="0.01"
+                               min="0.01" id="withdrawAmount" placeholder="0.00" required>
+                    </div>
+                </div>
+                <button class="btn btn--full btn--outline" type="submit">Request Withdrawal</button>
+                <p class="field__msg" id="withdrawMessage"></p>
+            </form>
+            <div id="withdrawList" class="withdraw-list"></div>
+        </div>
+
+    </aside>
+
+    <!-- Right column -->
+    <section class="main-panel">
+
+        <div class="card card--terminal">
+            <div class="terminal-header">
+                <div class="card__label">Live Agent Log</div>
+                <div class="terminal-dots">
+                    <span class="dot dot--red"></span>
+                    <span class="dot dot--yellow"></span>
+                    <span class="dot dot--green"></span>
+                </div>
+            </div>
+            <pre class="terminal" id="terminal">Waiting for agent output...</pre>
+        </div>
+
+        <div class="card">
+            <div class="card__label">Job History</div>
+            <table class="table" id="jobTable">
+                <thead>
+                <tr>
+                    <th>Job ID</th>
+                    <th>Image</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Duration</th>
+                    <th>Earned</th>
+                </tr>
+                </thead>
+                <tbody id="jobHistoryBody">
+                <tr>
+                    <td colspan="6" class="table__empty">No jobs yet — agent is polling for work.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

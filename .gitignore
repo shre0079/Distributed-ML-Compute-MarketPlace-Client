@@ -32,6 +32,9 @@ build/
 !**/src/test/**/build/
 jobs
 
+worker.rates
+worker.secret
+
 ### VS Code ###
 .vscode/
 

@@ -1,6 +1,8 @@
 package com.client.util;
 
 import com.client.dto.WorkerInfo;
+
+import javax.swing.*;
 import java.lang.management.ManagementFactory;
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -149,36 +151,71 @@ public class SystemInfo {
     private static final Path WORKER_RATES_FILE = Path.of("worker.rates");
 
     public static BigDecimal[] loadRates() {
+
         try {
             if (Files.exists(WORKER_RATES_FILE)) {
                 List<String> lines = Files.readAllLines(WORKER_RATES_FILE);
                 BigDecimal cpuRate = new BigDecimal(lines.get(0).trim());
                 BigDecimal gpuRate = new BigDecimal(lines.get(1).trim());
-                return new BigDecimal[] { cpuRate, gpuRate };
+                System.out.println("Loaded rates: cpu=$" + cpuRate + "/s gpu=$" + gpuRate + "/s");
+                return new BigDecimal[]{ cpuRate, gpuRate };
             }
         } catch (Exception e) {
-            System.out.println("Warning: could not read worker.rates, asking again.");
+            System.out.println("Could not read worker.rates, prompting for new values.");
         }
 
-        // First run — prompt the worker for pricing
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("=== Worker Pricing Setup ===");
-        System.out.println("Set your price per second of compute.");
-        System.out.println("Allowed range — CPU: $0.0001 to $0.0010/s | GPU: $0.0005 to $0.0050/s");
-
-        System.out.print("Enter your CPU rate per second (e.g. 0.0003): $");
-        BigDecimal cpuRate = new BigDecimal(scanner.nextLine().trim());
-
-        System.out.print("Enter your GPU rate per second (e.g. 0.0015): $");
-        BigDecimal gpuRate = new BigDecimal(scanner.nextLine().trim());
+        // First run — show a native dialog (works in windowless exe)
+        BigDecimal[] rates = promptRatesViaDialog();
 
         try {
-            Files.writeString(WORKER_RATES_FILE, cpuRate + "\n" + gpuRate);
+            Files.writeString(WORKER_RATES_FILE, rates[0] + "\n" + rates[1]);
+            System.out.println("Rates saved to worker.rates");
         } catch (Exception e) {
-            System.out.println("Warning: could not persist rates to file.");
+            System.out.println("Warning: could not save rates to file.");
         }
 
-        return new BigDecimal[] { cpuRate, gpuRate };
+        return rates;
+    }
+
+    private static BigDecimal[] promptRatesViaDialog() {
+
+        // Always-on-top frame ensures dialog isn't hidden behind other windows
+        javax.swing.JFrame frame = new javax.swing.JFrame();
+        frame.setAlwaysOnTop(true);
+        frame.setVisible(true);
+        frame.toFront();
+
+        String cpuInput = JOptionPane.showInputDialog(
+                null,
+                "Set your CPU rate per second\n(allowed: $0.0001 – $0.0010)\n\nExample: 0.0003",
+                "DCM Worker — Pricing Setup",
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (cpuInput == null || cpuInput.isBlank()) {
+            // User clicked cancel — use safe defaults
+            System.out.println("No CPU rate entered, using default $0.0003/s");
+            cpuInput = "0.0003";
+        }
+
+        String gpuInput = JOptionPane.showInputDialog(
+                null,
+                "Set your GPU rate per second\n(allowed: $0.0005 – $0.0050)\n\nExample: 0.0015",
+                "DCM Worker — Pricing Setup",
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (gpuInput == null || gpuInput.isBlank()) {
+            System.out.println("No GPU rate entered, using default $0.0015/s");
+            gpuInput = "0.0015";
+        }
+
+        try {
+            return new BigDecimal[]{ new BigDecimal(cpuInput.trim()), new BigDecimal(gpuInput.trim()) };
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input, using defaults.");
+            return new BigDecimal[]{ new BigDecimal("0.0003"), new BigDecimal("0.0015") };
+        }
     }
 
 
