@@ -158,6 +158,9 @@ public class AgentMain {
 
         Job job = mapper.readValue(response.body(), Job.class);
 
+        AgentState.currentJobId = job.jobId;
+        AgentState.currentJobStatus = "RUNNING";
+
         Path jobDir = null;
 
         try {
