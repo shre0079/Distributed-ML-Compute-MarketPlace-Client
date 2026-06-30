@@ -100,6 +100,9 @@ public class AgentMain {
         this.workerId = info.workerId;
         this.workerSecret = info.workerSecret;
 
+        AgentState.workerId = this.workerId;
+        AgentState.workerSecret = this.workerSecret;
+
         String json = mapper.writeValueAsString(info);
 
         int maxAttempts = 5;
