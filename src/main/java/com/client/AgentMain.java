@@ -40,8 +40,8 @@ public class AgentMain {
         AgentMain agent = new AgentMain();
 
         try {
-            pingServer();       // verify backend is up before doing anything
-            agent.register();   // then register
+            pingServer();
+            agent.register();
             agent.syncRates();
         } catch (Exception e) {
             System.out.println("Registration failed: " + e.getMessage());
