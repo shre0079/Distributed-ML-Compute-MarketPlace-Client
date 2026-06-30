@@ -48,7 +48,8 @@ public class AgentMain {
             return;
         }
 
-//        DockerExecutor.runContainer("hello-world");
+        DashboardServer.start();
+        openDashboardInBrowser();
 
         while (true) {
             try {
