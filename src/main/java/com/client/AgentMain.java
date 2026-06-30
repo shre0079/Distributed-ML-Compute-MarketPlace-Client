@@ -62,6 +62,19 @@ public class AgentMain {
         }
     }
 
+    private static void openDashboardInBrowser() {
+        try {
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(new URI("http://localhost:9090/index.html"));
+            } else {
+                System.out.println("Dashboard ready — open http://localhost:9090/index.html manually.");
+            }
+        } catch (Exception e) {
+            System.out.println("Could not auto-open browser: " + e.getMessage());
+            System.out.println("Open http://localhost:9090/index.html manually.");
+        }
+    }
+
     private static void pingServer() throws Exception {
 
         HttpRequest request = HttpRequest.newBuilder()
