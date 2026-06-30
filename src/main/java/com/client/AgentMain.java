@@ -1,5 +1,6 @@
 package com.client;
 
+import java.awt.Desktop;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,7 +19,10 @@ import com.client.service.HeartbeatService;
 import com.client.service.ResultUploader;
 import com.client.util.CleanUpUtil;
 import com.client.util.FileDownloader;
+import com.client.util.LogCapture;
 import com.client.util.SystemInfo;
+import com.client.web.AgentState;
+import com.client.web.DashboardServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 
@@ -92,8 +96,6 @@ public class AgentMain {
         System.out.println("Backend reachable: " + response.body());
     }
 
-
-    //register method wrt MAC+HOSTNAME + added validation and retry logic
     private void register() throws Exception {
 
         WorkerInfo info = SystemInfo.getWorkerInfo();
@@ -122,7 +124,7 @@ public class AgentMain {
 
                 if (response.statusCode() == 200) {
                     System.out.println("Registered successfully as: " + this.workerId);
-                    return; // success, exit retry loop
+                    return;
                 }
 
                 System.out.println("Registration attempt " + attempt + " failed: HTTP "
@@ -149,7 +151,7 @@ public class AgentMain {
                 .GET()
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request,HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 204) {
             System.out.println("No job available...");
@@ -165,17 +167,12 @@ public class AgentMain {
 
         try {
             String fileUri = job.fileUrl;
-            String fileName = fileUri.substring(fileUri.lastIndexOf("/")+1);
-            System.out.println("Downloading dataset: "+fileName);
+            String fileName = fileUri.substring(fileUri.lastIndexOf("/") + 1);
+            System.out.println("Downloading dataset: " + fileName);
             jobDir = FileDownloader.download(job.fileUrl, job.jobId);
 
             System.out.println("Running container...");
-//            String logs = DockerExecutor.runContainer(
-//                    job.dockerImage,
-//                    jobDir.toAbsolutePath().toString()
-//            );
 
-            // After DockerExecutor.runContainer()
             DockerExecutor.ExecutionResult result = DockerExecutor.runContainer(
                     job.dockerImage,
                     jobDir.toString(),
@@ -185,18 +182,14 @@ public class AgentMain {
             );
 
             if (result.timedOut) {
-                // Upload whatever output exists
                 Path outputDir = jobDir.resolve("output");
                 if (Files.exists(outputDir)) {
                     Path zip = ZipUtil.zipFolder(outputDir, job.jobId + "_partial.zip");
                     ArtifactUploader.upload(job.jobId, zip);
                 }
-
-                // Report timeout to backend
                 ResultUploader.uploadTimeout(job.jobId, result.runtimeMs, result.logs, workerSecret);
 
             } else {
-                // Normal success flow
                 Path outputDir = jobDir.resolve("output");
                 if (Files.exists(outputDir)) {
                     Path zip = ZipUtil.zipFolder(outputDir, job.jobId + ".zip");
@@ -208,8 +201,7 @@ public class AgentMain {
         } catch (Exception e) {
             System.out.println("Job failed: " + e.getMessage());
             reportFailure(job.jobId);
-        }
-        finally {
+        } finally {
             if (jobDir != null) {
                 CleanUpUtil.cleanup(jobDir);
             }
@@ -255,9 +247,6 @@ public class AgentMain {
         }
     }
 
-//
-
-    //using universal httpClient
     static class ArtifactUploader {
 
         static void upload(String jobId, Path zipPath) throws Exception {
@@ -271,7 +260,7 @@ public class AgentMain {
                     .POST(HttpRequest.BodyPublishers.ofByteArray(zipBytes))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request,  // ← shared client
+            HttpResponse<String> response = httpClient.send(request,
                     HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
@@ -281,6 +270,7 @@ public class AgentMain {
             System.out.println("Artifact uploaded for job: " + jobId);
         }
     }
+
     private void syncRates() throws Exception {
 
         BigDecimal[] rates = SystemInfo.loadRates();
