@@ -19,11 +19,21 @@ public class DockerExecutor {
                 .toString()
                 .replace("\\", "/");
 
-        // Pull image first --- Step-1
+        // Pull image first — stream through System.out so it reaches
+        // the dashboard's live log even with no console attached
         Process pull = new ProcessBuilder("docker", "pull", image)
-                .inheritIO()
+                .redirectErrorStream(true)
                 .start();
+
+        try (BufferedReader pullReader = new BufferedReader(
+                new InputStreamReader(pull.getInputStream()))) {
+            String pullLine;
+            while ((pullLine = pullReader.readLine()) != null) {
+                System.out.println("[pull] " + pullLine);
+            }
+        }
         pull.waitFor();
+
 
         // step 2 --- build run cmd with resource limits
         ProcessBuilder pb = new ProcessBuilder(
