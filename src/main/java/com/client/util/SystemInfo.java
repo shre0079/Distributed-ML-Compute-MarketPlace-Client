@@ -178,7 +178,45 @@ public class SystemInfo {
             System.out.println("Warning: could not persist rates to file.");
         }
 
-        return new BigDecimal[] { cpuRate, gpuRate };
+    private static BigDecimal[] promptRatesViaDialog() {
+
+        // Always-on-top frame ensures dialog isn't hidden behind other windows
+        javax.swing.JFrame frame = new javax.swing.JFrame();
+        frame.setAlwaysOnTop(true);
+        frame.setVisible(true);
+        frame.toFront();
+
+        String cpuInput = JOptionPane.showInputDialog(
+                null,
+                "Set your CPU rate per second\n(allowed: $0.0001 – $0.0010)\n\nExample: 0.0003",
+                "DCM Worker — Pricing Setup",
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (cpuInput == null || cpuInput.isBlank()) {
+            // User clicked cancel — use safe defaults
+            System.out.println("No CPU rate entered, using default $0.0003/s");
+            cpuInput = "0.0003";
+        }
+
+        String gpuInput = JOptionPane.showInputDialog(
+                null,
+                "Set your GPU rate per second\n(allowed: $0.0005 – $0.0050)\n\nExample: 0.0015",
+                "DCM Worker — Pricing Setup",
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (gpuInput == null || gpuInput.isBlank()) {
+            System.out.println("No GPU rate entered, using default $0.0015/s");
+            gpuInput = "0.0015";
+        }
+
+        try {
+            return new BigDecimal[]{ new BigDecimal(cpuInput.trim()), new BigDecimal(gpuInput.trim()) };
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid input, using defaults.");
+            return new BigDecimal[]{ new BigDecimal("0.0003"), new BigDecimal("0.0015") };
+        }
     }
 
 
