@@ -33,6 +33,8 @@ public class AgentMain {
 
     public static void main(String[] args) throws Exception {
 
+        LogCapture.install();
+
         System.out.println("Agent starting...");
 
         AgentMain agent = new AgentMain();
