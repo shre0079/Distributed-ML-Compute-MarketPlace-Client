@@ -213,7 +213,9 @@ public class AgentMain {
             if (jobDir != null) {
                 CleanUpUtil.cleanup(jobDir);
             }
-        }   
+            AgentState.currentJobId = null;
+            AgentState.currentJobStatus = "IDLE";
+        }
     }
 
     public static void reportFailure(String jobId) throws Exception {
